@@ -341,3 +341,56 @@ Quy trình nhanh:
 - [ ] Biết ép verify output
 - [ ] Biết khi nào nên cài skill mới
 - [ ] Biết cách đóng gói workflow thành skill nội bộ
+
+---
+
+## Quickstart: Dùng ngay trong 5 phút
+
+### 1) Sửa bug code (chuẩn nhất)
+**Gõ:**
+> Dùng coding-agent, sửa lỗi `<mô tả lỗi>` trong repo `<đường dẫn>`. Build pass, liệt kê file đổi, commit + push.
+
+**Kết quả mong đợi:**
+- root cause
+- patch summary
+- build/test result
+- commit hash
+
+### 2) Refactor an toàn
+**Gõ:**
+> Dùng coding-agent, refactor module `<tên module>` theo SOLID, không đổi API public, thêm test regression.
+
+**Kết quả mong đợi:**
+- danh sách điểm refactor
+- compatibility check
+- test pass
+
+### 3) Tóm tắt log dài
+**Gõ:**
+> Dùng summarize, tóm tắt log này theo format: nguyên nhân chính / ảnh hưởng / action đề xuất.
+
+### 4) Triage issue GitHub
+**Gõ:**
+> Dùng gh-issues + github, nhóm issue theo P0/P1/P2, đề xuất thứ tự xử lý theo risk/effort.
+
+### 5) Audit máy chạy OpenClaw
+**Gõ:**
+> Dùng healthcheck, audit host và trả checklist hardening theo P0/P1/P2.
+
+---
+
+## Mẫu output bắt buộc (copy vào prompt)
+
+> Trả kết quả theo đúng 4 mục:
+> 1. Root cause
+> 2. Patch summary
+> 3. Verification (build/test/log)
+> 4. Next actions
+
+---
+
+## Dấu hiệu dùng sai skill
+
+- Bug code phức tạp nhưng chỉ hỏi one-shot không dùng coding-agent.
+- Không yêu cầu verify nên output “đúng lý thuyết, sai thực tế”.
+- Không chốt format đầu ra nên đọc xong không biết làm gì tiếp.
