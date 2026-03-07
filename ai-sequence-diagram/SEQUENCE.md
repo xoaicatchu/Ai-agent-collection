@@ -1,120 +1,122 @@
-﻿# AI Agent Execution Model (Technical Description)
+﻿# Mô hình vận hành AI Agent (mô tả kỹ thuật)
 
-## 1) Runtime placement
+## 1) Agent chạy ở đâu?
 
-- **Gateway runtime (local machine)**
-  - Maintains session state, tool registry, routing, and channel integrations.
-  - Executes local tools (`read`, `edit`, `exec`, browser automation, etc.) on the host.
+- **Gateway runtime (máy local)**
+  - Giữ session, context, route message, quản lý tool.
+  - Thực thi tool local như `read`, `edit`, `exec`, browser automation... trên chính máy.
 
 - **LLM runtime (OpenAI cloud)**
-  - Produces reasoning, plans, tool-call decisions, and final responses.
-  - Does not directly access local files or processes without tool invocation through Gateway.
+  - Sinh kế hoạch, quyết định gọi tool, tổng hợp câu trả lời.
+  - Không tự đọc/ghi file local nếu không đi qua tool call do Gateway cho phép.
 
-- **External systems**
-  - GitHub, ngrok, third-party APIs, web services.
+- **Hệ thống ngoài**
+  - GitHub, ngrok, API bên thứ ba, web service.
 
----
-
-## 2) Control loop: agent ↔ model ↔ tools
-
-The agent workflow is iterative, not single-shot.
-
-1. User message arrives at Gateway.
-2. Gateway sends prompt + current session context to LLM.
-3. LLM decides either:
-   - return final answer, or
-   - request one/more tool calls.
-4. Gateway executes requested tools (local/external), captures outputs.
-5. Tool outputs are appended to session context.
-6. Gateway sends updated context back to LLM.
-7. Steps 3–6 repeat until LLM emits a final user-facing response.
-
-This loop continues until one of these conditions is met:
-- final response produced,
-- timeout/guardrail stop,
-- user interruption.
+=> Tóm lại: **não suy luận ở cloud**, còn **tay chân thao tác hệ thống** ở local.
 
 ---
 
-## 3) Sequence diagram (tool-augmented loop)
+## 2) Vòng lặp xử lý: agent ↔ model ↔ tool
+
+Luồng không phải 1 phát ra đáp án, mà là vòng lặp nhiều lượt:
+
+1. User gửi yêu cầu vào Gateway.
+2. Gateway gửi prompt + context hiện tại cho model OpenAI.
+3. Model quyết định:
+   - trả lời luôn, hoặc
+   - yêu cầu gọi 1 hay nhiều tool.
+4. Gateway chạy tool tương ứng (local/external), lấy output.
+5. Output tool được đưa ngược vào context.
+6. Gateway gửi context mới cho model.
+7. Lặp lại bước 3–6 cho tới khi model trả final answer.
+
+Điều kiện dừng:
+- Có final answer,
+- Timeout/guardrail,
+- User ngắt.
+
+---
+
+## 3) Sequence diagram tổng quát
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant U as User Channel
+  participant U as Kênh người dùng
   participant GW as Gateway (Local)
   participant LLM as OpenAI Model (Cloud)
   participant TL as Tool Layer
-  participant LOC as Local Host
-  participant EXT as External Systems
+  participant LOC as Máy local
+  participant EXT as Hệ thống ngoài
 
-  U->>GW: User request
-  GW->>LLM: Prompt + session context
+  U->>GW: Gửi yêu cầu
+  GW->>LLM: Prompt + context hiện tại
 
-  loop Until final answer
-    alt LLM requests local tools
-      LLM->>GW: Tool calls (read/edit/exec/...)
+  loop Cho tới khi có câu trả lời cuối
+    alt Model cần tool local
+      LLM->>GW: Yêu cầu gọi tool (read/edit/exec/...)
       GW->>TL: Dispatch
-      TL->>LOC: Execute on host
-      LOC-->>TL: Output/log/error
-      TL-->>GW: Tool results
-      GW->>LLM: Updated context + tool outputs
-    else LLM requests external tools
-      LLM->>GW: Tool calls (web/API/git...)
+      TL->>LOC: Chạy trên máy local
+      LOC-->>TL: Log/kết quả/lỗi
+      TL-->>GW: Tool result
+      GW->>LLM: Context cập nhật + output tool
+    else Model cần tool external
+      LLM->>GW: Yêu cầu gọi tool (web/API/git...)
       GW->>TL: Dispatch
-      TL->>EXT: Request
+      TL->>EXT: Gọi hệ thống ngoài
       EXT-->>TL: Response
-      TL-->>GW: Tool results
-      GW->>LLM: Updated context + tool outputs
-    else LLM can answer
-      LLM-->>GW: Final response text
+      TL-->>GW: Tool result
+      GW->>LLM: Context cập nhật + output tool
+    else Model đã đủ dữ liệu
+      LLM-->>GW: Final answer
     end
   end
 
-  GW-->>U: Final response
+  GW-->>U: Trả lời người dùng
 ```
 
 ---
 
-## 4) How large local context is handled (example: 500 files)
+## 4) Xử lý context lớn (ví dụ 500 file local)
 
-Large workspaces are handled by **progressive retrieval**, not full ingestion.
+Hệ thống không nạp 500 file cùng lúc. Cách làm là truy hồi tăng dần:
 
-### 4.1 Discovery phase
-- Enumerate candidate files (by path, extension, naming, recency, known entry points).
-- Identify likely relevance clusters (API layer, services, UI, config, tests).
+### 4.1 Discovery (khoanh vùng)
+- Liệt kê file ứng viên theo đường dẫn, extension, tên file, điểm vào hệ thống.
+- Ưu tiên cụm liên quan trực tiếp lỗi/yêu cầu.
 
-### 4.2 Targeted read phase
-- Read only high-signal files first (entry points, wiring, error locations, stack traces).
-- Use search-driven narrowing (symbol names, endpoint strings, error tokens).
+### 4.2 Targeted read (đọc có chọn lọc)
+- Đọc trước file tín hiệu cao: entrypoint, service chính, log/error liên quan.
+- Dùng search để thu hẹp: symbol, endpoint, lỗi cụ thể.
 
-### 4.3 Iterative context expansion
-- If evidence is insufficient, expand to adjacent files (imports/callees/models).
-- Continue breadth/depth expansion until confidence threshold is reached.
+### 4.3 Iterative expansion (mở rộng theo vòng)
+- Nếu chưa đủ bằng chứng, mở rộng sang file import/callee/model lân cận.
+- Lặp theo chiều rộng/chiều sâu đến khi đủ độ tin cậy.
 
-### 4.4 Context window budgeting
-- Only a bounded subset of snippets is sent to LLM each iteration.
-- Older/less relevant snippets are summarized or dropped.
-- High-value facts are retained as compact structured notes.
+### 4.4 Context budgeting (quản lý cửa sổ ngữ cảnh)
+- Mỗi lượt chỉ gửi một phần snippet quan trọng vào model.
+- Snippet cũ ít giá trị sẽ tóm tắt hoặc loại bỏ.
+- Giữ lại các “fact” quan trọng ở dạng ngắn gọn.
 
-### 4.5 Synthesis + action
-- LLM proposes edits/commands.
-- Tools apply changes and run verification (build/tests/run).
-- Results are fed back into loop for next decision.
+### 4.5 Synthesize + verify
+- Model đề xuất sửa/chạy lệnh.
+- Tool áp dụng sửa đổi, chạy build/test.
+- Kết quả verify quay lại vòng lặp để ra quyết định tiếp.
 
-In short: **500 files are not sent at once**; the system performs staged retrieval + iterative refinement.
-
----
-
-## 5) Practical implications
-
-- Accuracy depends on retrieval quality and iteration depth.
-- Tool output quality (logs, stack traces, grep results) strongly impacts final answer quality.
-- For complex tasks, multiple tool/LLM rounds are expected and normal.
+=> Kết luận: **500 file được xử lý theo chiến lược truy hồi nhiều lượt**, không đổ toàn bộ vào model một lần.
 
 ---
 
-## 6) Sequence for code-fix scenario
+## 5) Hệ quả thực tế
+
+- Chất lượng trả lời phụ thuộc mạnh vào chất lượng truy hồi + log tool.
+- Task phức tạp cần nhiều vòng model/tool là bình thường.
+- Tool output rõ ràng (stack trace, grep, test log) giúp model quyết định đúng hơn.
+
+---
+
+## 6) Sequence cho case sửa bug code
 
 ```mermaid
 sequenceDiagram
@@ -123,22 +125,22 @@ sequenceDiagram
   participant GW as Gateway
   participant LLM as OpenAI Model
   participant FS as Local Filesystem/Repo
-  participant CI as Build/Test Commands
+  participant CI as Build/Test Command
 
-  U->>GW: "Diagnose and fix bug"
-  GW->>LLM: Initial context + request
+  U->>GW: "Phân tích và sửa bug"
+  GW->>LLM: Context + yêu cầu
 
-  LLM->>GW: Read/search tool requests
-  GW->>FS: read/search
-  FS-->>GW: matching files/snippets
-  GW->>LLM: snippets + findings
+  LLM->>GW: Yêu cầu read/search
+  GW->>FS: Đọc/tìm file liên quan
+  FS-->>GW: Snippet + kết quả tìm kiếm
+  GW->>LLM: Bằng chứng kỹ thuật
 
-  LLM->>GW: edit instructions
-  GW->>FS: apply edits
-  GW->>CI: run build/tests
-  CI-->>GW: verification results
-  GW->>LLM: verification feedback
+  LLM->>GW: Đề xuất chỉnh sửa
+  GW->>FS: Áp dụng edit
+  GW->>CI: Chạy build/test
+  CI-->>GW: Kết quả verify
+  GW->>LLM: Feedback sau verify
 
-  LLM-->>GW: final diagnosis + patch summary
-  GW-->>U: final response
+  LLM-->>GW: Chẩn đoán cuối + tóm tắt bản vá
+  GW-->>U: Câu trả lời cuối
 ```
