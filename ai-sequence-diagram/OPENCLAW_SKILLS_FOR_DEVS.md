@@ -438,3 +438,36 @@ Get-Content "C:\Users\dovie\AppData\Roaming\npm\node_modules\openclaw\skills\cod
 1. Chạy `openclaw --version` để xác nhận CLI đã cài.
 2. Nếu báo command not found: thêm `npm global bin` vào `PATH`.
 3. Chạy lại `openclaw skills list`.
+
+## ClawHub: chạy lệnh nào cho ra việc ngay
+
+```bash
+# Kiểm tra skill clawhub trong OpenClaw
+openclaw skills info clawhub
+
+# Cài clawhub CLI (global) hoặc dùng npx
+npm i -g clawhub
+# hoặc
+npx clawhub --help
+
+# Đăng nhập / kiểm tra account
+npx clawhub login
+npx clawhub whoami
+
+# Tìm / xem skill
+npx clawhub search "coding agent"
+npx clawhub inspect <slug>
+
+# Cài skill vào thư mục skills local
+npx clawhub install <slug> --workdir . --dir skills
+
+# Danh sách skill đã cài
+npx clawhub list
+
+# Cập nhật skill
+npx clawhub update
+npx clawhub update <slug>
+
+# Gỡ skill
+npx clawhub uninstall <slug>
+```
