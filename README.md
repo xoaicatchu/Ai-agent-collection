@@ -144,3 +144,14 @@ sequenceDiagram
   LLM-->>GW: Chẩn đoán cuối + tóm tắt bản vá
   GW-->>U: Câu trả lời cuối
 ```
+
+---
+
+## Hướng dẫn dùng skills (thực hành từng bước)
+
+Đọc tại: `ai-sequence-diagram/OPENCLAW_SKILLS_FOR_DEVS.md`
+
+Mục quan trọng:
+- "Cách sử dụng skill — làm theo từng bước"
+- "Template prompt copy dùng ngay"
+- "Checklist verify output"

@@ -252,3 +252,92 @@ sequenceDiagram
 - và **chuẩn hóa output**.
 
 Skill là lớp khuếch đại năng suất, nhưng chỉ hiệu quả khi triển khai có kỷ luật.
+
+---
+
+## 9) Cách sử dụng skill — làm theo từng bước (copy dùng ngay)
+
+> Mục này là playbook thực hành. Đọc xong có thể dùng ngay.
+
+### Bước 1: Chốt đúng mục tiêu
+Viết 1 câu rõ ràng theo mẫu:
+- **Đầu vào**: repo/module/lỗi cụ thể
+- **Đầu ra**: kết quả mong muốn
+- **Ràng buộc**: không phá API, phải build pass, phải có commit...
+
+Ví dụ:
+> "Sửa lỗi sync reorder trong repo X, không đổi API public, build pass, commit + push main."
+
+### Bước 2: Chọn skill theo loại việc
+- Code nhiều file: `coding-agent`
+- Soi lịch sử phiên/lỗi cũ: `session-logs`
+- Tóm tắt log dài/PR dài: `summarize`
+- Làm việc issue/PR: `github`, `gh-issues`
+- Audit host: `healthcheck`
+
+### Bước 3: Gửi prompt theo template chuẩn
+
+#### Template A — Fix bug
+> Dùng `coding-agent`.
+> - Repo: <path/repo>
+> - Bug: <mô tả lỗi + cách tái hiện>
+> - Điều kiện xong: build pass, test pass, list file đổi, root cause.
+
+#### Template B — Refactor
+> Dùng `coding-agent`.
+> Refactor module <X> theo SOLID, giữ backward compatibility, thêm test regression, báo risk.
+
+#### Template C — Triage issue
+> Dùng `gh-issues` + `summarize`.
+> Gom issue theo mức độ ảnh hưởng P0/P1/P2, đề xuất thứ tự xử lý theo effort/risk.
+
+### Bước 4: Ép verify bắt buộc
+Luôn yêu cầu agent trả đủ:
+- [ ] Root cause
+- [ ] File changed
+- [ ] Build/Test result
+- [ ] Risk còn lại
+- [ ] Commit hash / PR link (nếu có)
+
+### Bước 5: Chốt output format
+Yêu cầu output theo format cố định để dễ review:
+1. Root cause
+2. Patch summary
+3. Verification
+4. Next actions
+
+---
+
+## 10) Ví dụ end-to-end (thực tế)
+
+### Case: Bug kéo-thả không lưu thứ tự
+Prompt nên gửi:
+> "Dùng coding-agent, sửa lỗi drag-drop reorder không persist trong repo todolist.
+> Kiểm tra event TODO_REORDERED, sortOrder, build pass. Commit và push lên main."
+
+Kết quả kỳ vọng:
+- Agent đọc file liên quan (`todo.effects.ts`, `event-sourcing.service.ts`, model)
+- Sửa luồng action/effect/event apply
+- Chạy build
+- Trả commit hash + tóm tắt file đổi
+
+---
+
+## 11) Khi nào cần cài skill mới (chưa có sẵn)
+
+Cài skill mới khi thỏa 2 điều kiện:
+1. Công việc lặp đi lặp lại >= 3 lần/tuần
+2. Prompt hiện tại dài và dễ quên bước
+
+Quy trình nhanh:
+- Tạo skill -> viết `SKILL.md` -> test 3 ca (happy/edge/fail) -> chốt owner duy trì.
+
+---
+
+## 12) Checklist “đọc xong phải làm được”
+
+- [ ] Biết chọn skill theo loại task
+- [ ] Biết viết prompt theo template
+- [ ] Biết ép verify output
+- [ ] Biết khi nào nên cài skill mới
+- [ ] Biết cách đóng gói workflow thành skill nội bộ
