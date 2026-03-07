@@ -1,184 +1,254 @@
-﻿# OpenClaw Skills cho Dev — Bản đầy đủ (không còn kiểu 3 skill cho có)
+﻿# OpenClaw Skills cho Dev/Architect — Bản chi tiết triển khai thực chiến
 
-Đây là bản cập nhật sau khi rà lại danh sách skills thực tế đang có trong OpenClaw runtime.
-
----
-
-## 1) Trước hết: OpenClaw có bao nhiêu skill “đáng dùng”?
-
-Tại máy hiện tại, danh sách skills phát hiện được gồm (rút gọn nhóm chính):
-
-- **Core/dev**: `coding-agent`, `skill-creator`, `model-usage`, `session-logs`, `summarize`
-- **LLM bridge**: `gemini`, `oracle`
-- **Git/dev platform**: `github`, `gh-issues`, `clawhub`
-- **Messaging/collab**: `discord`, `slack`, `imsg`, `bluebubbles`, `wacli`
-- **Productivity**: `notion`, `obsidian`, `things-mac`, `apple-notes`, `apple-reminders`, `trello`
-- **Media/AI content**: `openai-image-gen`, `openai-whisper`, `openai-whisper-api`, `video-frames`, `nano-pdf`, `nano-banana-pro`, `gifgrep`
-- **Infra/device/home**: `healthcheck`, `camsnap`, `openhue`, `sonoscli`, `spotify-player`, `voice-call`
-- **System/terminal**: `tmux`, `xurl`, `ordercli`, `eightctl`, `mcporter`, `blucli`
-- **Utility**: `weather`, `goplaces`, `blogwatcher`, `peekaboo`, `sag`, `sherpa-onnx-tts`, `songsee`
-
-=> Nói thẳng: hệ sinh thái skill khá rộng, không chỉ vài cái cơ bản.
+Tài liệu này tách rõ:
+1. **Skill có sẵn (built-in)**: giới thiệu chi tiết cách dùng.
+2. **Skill chưa có sẵn**: hướng dẫn cài đặt từng bước.
+3. Có **hình minh họa (Mermaid)** cho luồng cài đặt và workflow vận hành.
 
 ---
 
-## 2) Cách cài đặt / bật skill cho đúng
+## 1) Mục tiêu khi chọn skill cho dev architecture
 
-## 2.1 Skill built-in
-- Nếu skill đã có sẵn trong thư mục `openclaw/skills`, thường chỉ cần dùng đúng ngữ cảnh là agent tự chọn.
-
-## 2.2 Skill community (ClawHub)
-- Cài thêm từ marketplace/community khi cần workflow chuyên sâu.
-- Sau khi cài:
-  1. kiểm tra thư mục skill có `SKILL.md`,
-  2. restart gateway nếu cần nạp lại.
-
-## 2.3 Skill nội bộ (team skill)
-- Tạo skill riêng cho quy trình team (release, incident, migration, hotfix).
-- Tối thiểu cần:
-  - scope,
-  - non-scope,
-  - checklist,
-  - format output chuẩn.
+Ưu tiên skill giúp tăng 4 nhóm năng suất:
+- **A. Coding throughput** (fix/refactor/build nhanh hơn)
+- **B. Decision quality** (đọc log, tóm tắt, theo dõi context)
+- **C. Delivery flow** (issue, PR, docs, release)
+- **D. Ops reliability** (audit host, debug API/runtime)
 
 ---
 
-## 3) Nhóm skill hay cho lập trình viên (chi tiết)
+## 2) Skill có sẵn (built-in) — giới thiệu chi tiết
 
-## 3.1 Nhóm coding trực tiếp
+> Danh sách dưới đây dựa trên bộ skill hiện có trong OpenClaw runtime (máy hiện tại).
 
-### `coding-agent`
-- Dùng khi: feature lớn, refactor nhiều file, bug khó tái hiện.
-- Mạnh ở vòng lặp: đọc code -> sửa -> build/test -> sửa tiếp.
+## 2.1 Nhóm bắt buộc cho Dev/Architect
 
-### `session-logs`
-- Dùng để soi lại lịch sử phiên trước, trace quyết định và lỗi.
-- Rất hợp để debug “hôm qua chạy được, hôm nay hỏng”.
+### 2.1.1 `coding-agent`
+**Mục đích**
+- Task coding nhiều file, bug khó, refactor lớn, migration codebase.
 
-### `summarize`
-- Tóm tắt logs dài, PR lớn, output test dài.
-- Giúp giảm thời gian đọc output rác.
+**Khi nên dùng**
+- Feature mới > 3 file.
+- Root-cause chưa rõ, cần đọc code + chạy build/test lặp.
 
-### `model-usage`
-- Theo dõi usage/token/cost/model behavior.
-- Hữu ích khi tối ưu chi phí agent cho team.
+**Khi không nên dùng**
+- Sửa 1–2 dòng đơn giản (sửa trực tiếp nhanh hơn).
 
----
-
-## 3.2 Nhóm Git/GitHub workflow
-
-### `github`
-- Tạo/cập nhật issue, PR context, lấy metadata repo.
-
-### `gh-issues`
-- Tập trung xử lý issue list, triage, mapping bug -> task.
-
-### `clawhub`
-- Khám phá, cài và quản lý skills từ ecosystem.
+**Output chuẩn nên yêu cầu**
+- Root cause
+- Danh sách file đổi
+- Kết quả build/test
+- Risk còn lại
 
 ---
 
-## 3.3 Nhóm tri thức & tài liệu dev
+### 2.1.2 `session-logs`
+**Mục đích**
+- Truy lại lịch sử hành động agent theo phiên.
+
+**Giá trị cho architect**
+- Audit quyết định kỹ thuật.
+- Soi chuỗi lỗi “đã fix rồi lại tái phát”.
+
+---
+
+### 2.1.3 `summarize`
+**Mục đích**
+- Tóm tắt output dài (test logs, CI logs, changelog, PR lớn).
+
+**Giá trị**
+- Giảm thời gian đọc output rác, tập trung vào anomaly/risk.
+
+---
+
+### 2.1.4 `github` + `gh-issues`
+**Mục đích**
+- Kết nối workflow kỹ thuật với issue/PR.
+
+**Use case**
+- Map bug -> issue -> commit -> PR summary.
+- Triage issue theo mức độ ảnh hưởng architecture.
+
+---
+
+### 2.1.5 `model-usage`
+**Mục đích**
+- Theo dõi usage/cost/model footprint.
+
+**Giá trị**
+- Architect có số liệu để tối ưu policy dùng model theo loại task.
+
+---
+
+## 2.2 Nhóm hỗ trợ delivery & docs
 
 ### `notion`, `obsidian`, `trello`
-- Đồng bộ checklist công việc, technical notes, release note.
+- Quản lý kiến trúc, ADR, roadmap, checklist release.
 
-### `apple-notes`, `apple-reminders`, `things-mac`
-- Hợp cho workflow cá nhân trên Mac.
-
----
-
-## 3.4 Nhóm AI content cho dev
+### `nano-pdf`, `video-frames`
+- Bóc tách tài liệu kỹ thuật/PDF, trích frame demo bug từ video.
 
 ### `openai-whisper` / `openai-whisper-api`
-- Chuyển audio họp kỹ thuật thành text action items.
-
-### `openai-image-gen`
-- Tạo ảnh minh hoạ docs/demo.
-
-### `video-frames`
-- Trích frame video để debug UI/bug demo theo timeline.
-
-### `nano-pdf`
-- Parse/tóm tắt PDF spec, tài liệu tích hợp.
+- Chuyển meeting audio thành action items kỹ thuật.
 
 ---
 
-## 3.5 Nhóm ops/hạ tầng
+## 2.3 Nhóm vận hành/hạ tầng
 
 ### `healthcheck`
-- Audit security baseline, hardening, risk posture.
+- Audit bảo mật/ổn định host chạy OpenClaw.
 
-### `tmux`
-- Quản lý các phiên terminal dài, job nền, tail logs.
-
-### `xurl`
-- Workflow gọi API/debug request-response nhanh.
+### `tmux`, `xurl`
+- Chạy job dài, debug API, repeatable terminal workflow.
 
 ---
 
-## 3.6 Nhóm giao tiếp & automation
+## 3) Ma trận “skill nào cho việc gì”
 
-### `discord`, `slack`, `imsg`, `wacli`, `bluebubbles`
-- Bot hóa thông báo build, incident, release.
-
-### `voice-call`, `sag`, `sherpa-onnx-tts`
-- Tạo voice summary cho cảnh báo/briefing.
+| Loại việc | Skill chính | Skill phụ |
+|---|---|---|
+| Fix bug nhiều file | coding-agent | session-logs, summarize |
+| Refactor module | coding-agent | github |
+| Triage issue/PR | gh-issues | github, summarize |
+| Review log production | summarize | session-logs |
+| Viết ADR / docs kiến trúc | notion / obsidian | summarize |
+| Audit host OpenClaw | healthcheck | tmux, xurl |
 
 ---
 
-## 4) Bộ skill stack gợi ý cho dev team
+## 4) Skill chưa có sẵn — cách cài đặt chi tiết
 
-## Gói A — Solo dev (nhẹ, hiệu quả)
+## 4.1 Luồng cài đặt tổng quát
+
+```mermaid
+flowchart TD
+  A[Xác định nhu cầu skill] --> B{Skill đã có sẵn?}
+  B -->|Có| C[Dùng trực tiếp]
+  B -->|Không| D[Tìm trên ClawHub/Git]
+  D --> E[Kiểm tra nguồn + tài liệu SKILL.md]
+  E --> F[Cài vào thư mục skills]
+  F --> G[Restart Gateway]
+  G --> H[Test prompt mẫu]
+  H --> I[Chuẩn hóa output/guardrail]
+```
+
+---
+
+## 4.2 Cài từ ClawHub (khuyến nghị)
+
+### Bước 1: Tìm skill phù hợp
+- Vào ClawHub, tìm theo domain (devops, db migration, cloud, observability...).
+
+### Bước 2: Đọc metadata trước khi cài
+- Scope, dependencies, quyền tool cần dùng.
+- Phiên bản OpenClaw tương thích.
+
+### Bước 3: Install
+- Cài theo hướng dẫn của skill (UI/CLI tuỳ skill).
+
+### Bước 4: Verify
+- Kiểm tra skill xuất hiện trong danh sách skills.
+- Chạy prompt smoke-test ngắn.
+
+### Bước 5: Hardening
+- Giới hạn tool allowlist nếu skill nhạy cảm.
+- Chốt policy output.
+
+---
+
+## 4.3 Cài thủ công (manual install)
+
+> Dùng khi skill nội bộ hoặc chưa publish trên marketplace.
+
+### Bước 1: Tạo thư mục skill
+- Đặt tại thư mục skills của OpenClaw.
+
+### Bước 2: Tạo `SKILL.md`
+Nội dung tối thiểu:
+- **Dùng khi nào / Không dùng khi nào**
+- Input/Output kỳ vọng
+- Checklist thao tác
+- Ràng buộc an toàn
+
+### Bước 3: Thêm file phụ trợ (nếu có)
+- script, template, assets.
+
+### Bước 4: Restart Gateway
+- để nạp skill mới.
+
+### Bước 5: Test 3 ca
+- Happy path
+- Edge case
+- Failure path
+
+---
+
+## 4.4 “Hình” minh họa từng bước cài manual
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Dev as Dev/Architect
+  participant FS as Skills Folder
+  participant GW as OpenClaw Gateway
+  participant AG as Agent Session
+
+  Dev->>FS: Tạo folder skill mới
+  Dev->>FS: Viết SKILL.md + script/tài nguyên
+  Dev->>GW: Restart Gateway
+  GW-->>AG: Nạp danh sách skill mới
+  Dev->>AG: Chạy prompt smoke-test
+  AG-->>Dev: Kết quả + lỗi (nếu có)
+  Dev->>FS: Chỉnh SKILL.md theo feedback
+```
+
+---
+
+## 5) Bộ skill stack khuyến nghị theo cấp độ
+
+## 5.1 Cá nhân dev (MVP)
 - `coding-agent`
 - `session-logs`
 - `summarize`
 - `github`
 
-## Gói B — Team product (có quy trình)
-- Gói A + `gh-issues`, `notion`, `trello`, `model-usage`
+## 5.2 Team sản phẩm
+- Bộ MVP + `gh-issues`, `notion`/`trello`, `model-usage`
 
-## Gói C — Team vận hành nghiêm túc
-- Gói B + `healthcheck`, `tmux`, `xurl`, `slack`/`discord`
-
----
-
-## 5) Cách chọn skill đúng (tránh lạm dụng)
-
-1. Task coding sâu => ưu tiên `coding-agent`.
-2. Task tài liệu/tri thức => `summarize` + `notion/obsidian`.
-3. Task repo/issue => `github` + `gh-issues`.
-4. Task ops/security => `healthcheck` + `tmux/xurl`.
-5. Đừng nhét 10 skill cho 1 việc nhỏ (tăng noise).
+## 5.3 Team platform/architecture
+- Bộ Team + `healthcheck`, `tmux`, `xurl`, `nano-pdf`, `openai-whisper`
 
 ---
 
-## 6) Ví dụ prompt thực dụng
+## 6) Tiêu chí “Done” khi triển khai skill mới
 
-### Fix bug nhiều file
-> “Dùng coding-agent, sửa bug sync trong module X, chạy build/test, trả root cause + patch summary.”
-
-### Review release nhanh
-> “Dùng summarize + github, tóm tắt PR trong milestone Y và liệt kê risk còn mở.”
-
-### Lập checklist bảo mật
-> “Dùng healthcheck, audit host chạy OpenClaw, xuất checklist hardening theo mức ưu tiên.”
+- [ ] Có `SKILL.md` rõ scope/non-scope
+- [ ] Có prompt mẫu cho 3 use case thực
+- [ ] Có output format chuẩn
+- [ ] Có guardrail an toàn
+- [ ] Có smoke-test pass
+- [ ] Có owner bảo trì skill
 
 ---
 
-## 7) Sai lầm phổ biến
+## 7) Mẫu prompt cho architect (copy dùng ngay)
 
-- Chọn sai skill (ví dụ bug code phức tạp nhưng lại làm kiểu one-shot).
-- Không có acceptance criteria rõ.
-- Không verify output bằng build/test thực tế.
-- Không chốt format kết quả (dẫn đến trả lời lan man).
+### 7.1 Phân tích lỗi hệ thống
+> Dùng coding-agent + session-logs. Tìm root cause lỗi X, xác nhận bằng build/test, trả patch tối thiểu và risk mở.
+
+### 7.2 Triage backlog kỹ thuật
+> Dùng gh-issues + summarize. Nhóm issue theo impact kiến trúc, đề xuất thứ tự xử lý theo effort/risk.
+
+### 7.3 Audit host chạy OpenClaw
+> Dùng healthcheck. Xuất checklist hardening theo P0/P1/P2 và hành động khắc phục.
 
 ---
 
 ## 8) Kết luận
 
-Skill là lớp “chuyên môn hóa hành vi agent”.
-Dùng đúng skill = tăng tốc + giảm lỗi quy trình.
+Để tối ưu năng suất dev/architect, đừng chỉ “có skill là dùng”: 
+- phải **chọn đúng skill theo loại việc**,
+- **có verify loop**, 
+- và **chuẩn hóa output**.
 
-Với dev, bộ skill tối thiểu nên có: `coding-agent`, `session-logs`, `summarize`, `github`.
-Sau đó mở rộng theo nhu cầu team sang `gh-issues`, `healthcheck`, `notion/trello`, `tmux/xurl`.
+Skill là lớp khuếch đại năng suất, nhưng chỉ hiệu quả khi triển khai có kỷ luật.
