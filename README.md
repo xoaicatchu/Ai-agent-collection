@@ -158,3 +158,6 @@ Mục quan trọng:
 
 
 Xem phần Quickstart thực hành: ai-sequence-diagram/OPENCLAW_SKILLS_FOR_DEVS.md
+
+
+Lệnh kiểm tra skills bằng CLI đã thêm trong: ai-sequence-diagram/OPENCLAW_SKILLS_FOR_DEVS.md

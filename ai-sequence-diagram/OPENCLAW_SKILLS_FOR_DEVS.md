@@ -394,3 +394,47 @@ Quy trình nhanh:
 - Bug code phức tạp nhưng chỉ hỏi one-shot không dùng coding-agent.
 - Không yêu cầu verify nên output “đúng lý thuyết, sai thực tế”.
 - Không chốt format đầu ra nên đọc xong không biết làm gì tiếp.
+
+---
+
+## Danh sách skill: vào đâu, gõ gì, kiểm tra thế nào
+
+### CLI chính thức
+
+```bash
+openclaw help
+openclaw skills --help
+openclaw skills list
+openclaw skills info coding-agent
+openclaw skills check
+```
+
+### Ý nghĩa từng lệnh
+
+- `openclaw skills list`
+  - Liệt kê toàn bộ skill hiện có.
+- `openclaw skills info <skill-name>`
+  - Xem mô tả chi tiết 1 skill (scope, yêu cầu, cách dùng).
+- `openclaw skills check`
+  - Kiểm tra skill nào thiếu dependency/chưa ready.
+
+### Ví dụ chạy nhanh
+
+```bash
+openclaw skills info healthcheck
+openclaw skills info skill-creator
+openclaw skills info summarize
+```
+
+### Kiểm tra trực tiếp thư mục skill (Windows PowerShell)
+
+```powershell
+Get-ChildItem "C:\Users\dovie\AppData\Roaming\npm\node_modules\openclaw\skills" -Directory | Select-Object Name
+Get-Content "C:\Users\dovie\AppData\Roaming\npm\node_modules\openclaw\skills\coding-agent\SKILL.md"
+```
+
+### Nếu lệnh không chạy
+
+1. Chạy `openclaw --version` để xác nhận CLI đã cài.
+2. Nếu báo command not found: thêm `npm global bin` vào `PATH`.
+3. Chạy lại `openclaw skills list`.
